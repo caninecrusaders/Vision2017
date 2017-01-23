@@ -7,7 +7,7 @@ using namespace std;
 int main() {
     int largest_area=0;
     int largest_contour_index=0;
-    double focalLength = 1084.36;
+    double focalLength = 0;//1084.36;
     double distance;
     Rect bounding_rect;    
     vector<vector<Point> > contours;
@@ -31,10 +31,10 @@ int main() {
             }
         }
         drawContours( frame, contours, largest_contour_index, Scalar( 0, 255, 0 ), 2);
-        distance = focalLength*11.0/bounding_rect.width;
-        /* focalLength = (bounding_rect.width * 24.0)/11.0; */
+        /* distance = focalLength*11.0/bounding_rect.width; */
+        focalLength = (bounding_rect.height* 24.0)/8.50;
         /* cout<<focalLength<<endl; */
-        std::string title = std::to_string(distance) + "(in)";
+        std::string title = std::to_string(focalLength) + "(in)";
         putText(frame, title, Point(50, 50),FONT_HERSHEY_SIMPLEX, 1, Scalar(0,255,0));
         largest_contour_index = 0;
         largest_area = 0;
