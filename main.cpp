@@ -44,7 +44,7 @@ int main(int v,char* argv[]){
 int run_video(char* file)
 {
   Mat hsv, hsv_blur, filter, edged;
-  Mat map1, map2, cameraMatrix, distCoeffs, imageSize;
+  //Mat map1, map2, cameraMatrix, distCoeffs, imageSize;
   int largest_area = 0, largest_contour_index=0;
   double focalLength = 1089.88;//1084.36;
   double distance;
@@ -62,14 +62,14 @@ int run_video(char* file)
     cerr << "Fail to open camera " << endl;
     return 0;
   }
-  cameraMatrix = Mat::eye(3, 3, CV_64F);
-  initUndistortRectifyMap(cameraMatrix, distCoeffs, Mat(), getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0), imageSize, CV_16SC2, map1, map2);
+  //cameraMatrix = Mat::eye(3, 3, CV_64F);
+  //initUndistortRectifyMap(cameraMatrix, distCoeffs, Mat(), getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0), imageSize, CV_16SC2, map1, map2);
   for(;;)
   {
     Mat frame, smallerframe;
     cap.read(frame); // get a new frame from camera
-    Mat temp = frame.clone();
-    undistort(temp, frame, cameraMatrix, distCoeffs);
+    //Mat temp = frame.clone();
+    //undistort(temp, frame, cameraMatrix, distCoeffs);
     resize(frame, smallerframe, Size(480,320));
     cvtColor(smallerframe, hsv, COLOR_BGR2HSV);
     inRange(hsv, Scalar(lBlue, lGreen, lRed), Scalar(uBlue, uGreen, uRed), filter);
@@ -95,7 +95,7 @@ int run_video(char* file)
     cout<<"r"<<lRed<<" "<<uRed<<"b"<<lBlue<<" "<<uBlue<<"g"<<lGreen<<" "<<uGreen<<endl;
     largest_contour_index = 0;
     largest_area = 0;
-    /* imshow("original", frame); */
+    //imshow("original", frame); 
     imshow("filtered", filter);
     waitKey(1);
   }
