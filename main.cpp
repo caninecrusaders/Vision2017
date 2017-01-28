@@ -42,18 +42,24 @@ int main(int v,char* argv[]){
 int run_video(char* file)
 {
   Mat hsv, hsv_blur, filter;
-  VideoCapture cap(0);
-  //cap.set(CV_CAP_PROP_FOURCC, CV_FOURCC('A','V','C',1));
-  //cap.open(0);
+  Mat map1, map2, cameraMatrix, distCoeffs, imageSize;
+  Size imageSize;
+  VideoCapture cap;
+  cap.set(CV_CAP_PROP_FRAME_WIDTH, 1280);
+  cap.set(CV_CAP_PROP_FRAME_HEIGHT, 720);
+  cap.open(0);
   if(!cap.isOpened()) { // check if we succeeded
     cerr << "Fail to open camera " << endl;
     return 0;
   }
- 
+  cameraMatrix = Mat::eye(3, 3, CV_64F);
+  initUndistortRectifyMap(cameraMatrix, distCoeffs, Mat(), getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0), imageSize, CV_16SC2, map1, map2);
   for(;;)
   {
     Mat frame;
     cap.read(frame); // get a new frame from camera
+    Mat temp = frame.clone();
+    undistort(temp, frame, cameraMatrix, distCoeffs);
     cvtColor(frame, hsv, COLOR_BGR2HSV);
     //inRange(hsv_img, Scalar(lBlue, lGreen, lRed), Scalar(uBlue, uGreen, uRed), greenLowerHue);
     //GaussianBlur(hsv, hsv_blur, Size(3, 3), 0, 0);
