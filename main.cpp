@@ -49,24 +49,32 @@ int main(int v,char* argv[]){
 int run_video(char* file)
 {
   Mat hsv, hsv_blur, filter, edged;
+  Mat map1, map2, cameraMatrix, distCoeffs, imageSize;
   int largest_area = 0, largest_contour_index=0;
   double focalLength = 1089.88;//1084.36;
   double distance;
   Rect bounding_rect;
+  Size imageSize;
   vector<vector<Point> > contours;
   vector<Vec4i> hierarchy;
-  VideoCapture cap(0);
+  VideoCapture cap;
+  cap.set(CV_CAP_PROP_FRAME_WIDTH, 1280);
+  cap.set(CV_CAP_PROP_FRAME_HEIGHT, 720);
+  cap.open(0);
   //cap.set(CV_CAP_PROP_FOURCC, CV_FOURCC('A','V','C',1));
   //cap.open(0);
   if(!cap.isOpened()) { // check if we succeeded
     cerr << "Fail to open camera " << endl;
     return 0;
   }
- 
+  cameraMatrix = Mat::eye(3, 3, CV_64F);
+  initUndistortRectifyMap(cameraMatrix, distCoeffs, Mat(), getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0), imageSize, CV_16SC2, map1, map2);
   for(;;)
   {
     Mat frame, smallerframe;
     cap.read(frame); // get a new frame from camera
+    Mat temp = frame.clone();
+    undistort(temp, frame, cameraMatrix, distCoeffs);
     resize(frame, smallerframe, Size(480,320));
     cvtColor(smallerframe, hsv, COLOR_BGR2HSV);
     inRange(hsv, Scalar(lBlue, lGreen, lRed), Scalar(uBlue, uGreen, uRed), filter);
