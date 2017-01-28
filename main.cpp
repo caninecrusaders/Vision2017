@@ -16,6 +16,7 @@ void on_lGreen_thresh_trackbar(int, void *);
 void on_uGreen_thresh_trackbar(int, void *);
 void on_lBlue_thresh_trackbar(int, void *);
 void on_uBlue_thresh_trackbar(int, void *);
+void readCalibration(string filename, Mat& image, Mat& coeffs);
 //RGB RANGE
 //int lRed = 0, lGreen = 215, lBlue = 0, uRed = 179, uGreen = 255, uBlue = 241;
 //HSV RANGE
@@ -26,6 +27,7 @@ int main(int v,char* argv[]){
   //VideoCapture cap("nvcamerasrc ! video/x-raw(memory:NVMM), width=(int)1280, height=(int)720,format=(string)I420, framerate=(fraction)24/1 ! nvvidconv flip-method=2 ! video/x-raw, format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink"); //open the default camera
 
   cout << argv[1] << "\n";
+
   /* namedWindow("original", WINDOW_NORMAL); */
   namedWindow("filtered", WINDOW_NORMAL);
   /* namedWindow("hsv", WINDOW_NORMAL); */
@@ -36,6 +38,9 @@ int main(int v,char* argv[]){
   createTrackbar("High G","filtered", &uGreen, 255, on_uGreen_thresh_trackbar);
   createTrackbar("Low B","filtered", &lBlue, 255, on_lBlue_thresh_trackbar);
   createTrackbar("High B","filtered", &uBlue, 255, on_uBlue_thresh_trackbar);
+
+  Mat imageMatrix, distortCoeffs;
+  readCalibration(argv[1], &imageMatrix, &distortCoeffs);
 
   while(1) { run_video(argv[1]); }
 
@@ -142,4 +147,30 @@ int main()
     }
   }
 }*/
+void readCalibration(string filename, Mat& image, Mat& coeffs){
+    cout << endl << "Reading: " << filename << endl;
+    FileStorage fs;
+    fs.open(filename, FileStorage::READ);
+
+    int itNr;
+    //fs["iterationNr"] >> itNr;
+    itNr = (int) fs["iterationNr"];
+    cout << itNr;
+    if (!fs.isOpened())
+    {
+        cerr << "Failed to open " << filename << endl;
+        help(av);
+        return 1;
+    }
+
+    FileNodeIterator it = n.begin(), it_end = n.end(); // Go through the node
+    for (; it != it_end; ++it)
+        cout << (string)*it << endl;
+
+    fs["image_matrix"] >> image;                                      // Read cv::Mat
+    fs["distortion_coefficients"] >> coeffs;
+    cout << endl
+        << "image_matrix = " << image << endl;
+    cout << "distortion_coefficients = " << distortion_coefficients << endl << endl;
+}
 
