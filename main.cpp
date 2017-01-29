@@ -1,6 +1,6 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
-/* #include "opencv2/gpu/gpu.hpp" */
+#include "opencv2/gpu/gpu.hpp"
 
 #include <iostream>
 #include <string>
@@ -10,97 +10,52 @@
 using namespace std;
 using namespace cv;
 int run_video(char* file);
-void on_lRed_thresh_trackbar(int, void *);
-void on_uRed_thresh_trackbar(int, void *);
-void on_lGreen_thresh_trackbar(int, void *);
-void on_uGreen_thresh_trackbar(int, void *);
-void on_lBlue_thresh_trackbar(int, void *);
-void on_uBlue_thresh_trackbar(int, void *);
+void on_lH_thresh_trackbar(int, void *);
+void on_hH_thresh_trackbar(int, void *);
+void on_lS_thresh_trackbar(int, void *);
+void on_hS_thresh_trackbar(int, void *);
+void on_lV_thresh_trackbar(int, void *);
+void on_hV_thresh_trackbar(int, void *);
 void readCalibration(string filename, Mat& image, Mat& coeffs);
-//RGB RANGE
-//int lRed = 0, lGreen = 215, lBlue = 0, uRed = 179, uGreen = 255, uBlue = 241;
-//HSV RANGE
-int lBlue = 80, lGreen = 220, lRed = 130, uBlue = 130, uGreen = 255, uRed = 255;
-/* int lH = 48, lS = 80, lV = 210, uH = 80, uS = 246, uV = 255; */
-
+void addTrackBars(string window);
+void computeFocalLength(Mat &src);
+void computeDistance(Mat &src);
+void applyFilter(Mat &src, Mat &dest);
+int findHeightOfLargestContour(Mat &src);
+Mat cameraMatrix, distCoeffs;
+int lV = 80, lS = 220, lH = 130, hV = 130, hS = 255, hH = 255;
 int main(int v,char* argv[]){
-  //VideoCapture cap("nvcamerasrc ! video/x-raw(memory:NVMM), width=(int)1280, height=(int)720,format=(string)I420, framerate=(fraction)24/1 ! nvvidconv flip-method=2 ! video/x-raw, format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink"); //open the default camera
-
+  
   cout << argv[1] << "\n";
-
-  /* namedWindow("original", WINDOW_NORMAL); */
+  namedWindow("original", WINDOW_NORMAL);
   namedWindow("filtered", WINDOW_NORMAL);
-  /* namedWindow("hsv", WINDOW_NORMAL); */
-
-  createTrackbar("Low R","filtered", &lRed, 255, on_lRed_thresh_trackbar);
-  createTrackbar("High R","filtered", &uRed, 255, on_uRed_thresh_trackbar);
-  createTrackbar("Low G","filtered", &lGreen, 255, on_lGreen_thresh_trackbar);
-  createTrackbar("High G","filtered", &uGreen, 255, on_uGreen_thresh_trackbar);
-  createTrackbar("Low B","filtered", &lBlue, 255, on_lBlue_thresh_trackbar);
-  createTrackbar("High B","filtered", &uBlue, 255, on_uBlue_thresh_trackbar);
-
-  Mat imageMatrix, distortCoeffs;
-  readCalibration(argv[1], &imageMatrix, &distortCoeffs);
-
-  while(1) { run_video(argv[1]); }
+  addTrackBars("filtered");
+  readCalibration(argv[1], cameraMatrix, distCoeffs);
+  run_video(argv[1]);
 
   return 0;
 }
 int run_video(char* file)
 {
-  Mat hsv, hsv_blur, filter, edged;
-  //Mat map1, map2, cameraMatrix, distCoeffs, imageSize;
-  int largest_area = 0, largest_contour_index=0;
-  double focalLength = 1089.88;//1084.36;
-  double distance;
-  Rect bounding_rect;
-  Size imageSize;
-  vector<vector<Point> > contours;
-  vector<Vec4i> hierarchy;
   VideoCapture cap;
-  cap.set(CV_CAP_PROP_FRAME_WIDTH, 1280);
-  cap.set(CV_CAP_PROP_FRAME_HEIGHT, 720);
-  cap.open(0);
-  //cap.set(CV_CAP_PROP_FOURCC, CV_FOURCC('A','V','C',1));
-  //cap.open(0);
+  cap.set(CV_CAP_PROP_FRAME_WIDTH, 640);
+  cap.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
+  cap.open(1);
   if(!cap.isOpened()) { // check if we succeeded
     cerr << "Fail to open camera " << endl;
     return 0;
   }
-  //cameraMatrix = Mat::eye(3, 3, CV_64F);
-  //initUndistortRectifyMap(cameraMatrix, distCoeffs, Mat(), getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0), imageSize, CV_16SC2, map1, map2);
   for(;;)
   {
-    Mat frame, smallerframe;
+  	Mat filter, frame, smallerFrame;
     cap.read(frame); // get a new frame from camera
-    //Mat temp = frame.clone();
-    //undistort(temp, frame, cameraMatrix, distCoeffs);
-    resize(frame, smallerframe, Size(480,320));
-    cvtColor(smallerframe, hsv, COLOR_BGR2HSV);
-    inRange(hsv, Scalar(lBlue, lGreen, lRed), Scalar(uBlue, uGreen, uRed), filter);
-    //GaussianBlur(hsv, hsv_blur, Size(3, 3), 0, 0);
-    /* inRange(hsv, Scalar(lH, lS, lV), Scalar(uH, uS, uV), filter); */
-		/* imshow("hsv", hsv); */
-    /* cv::Canny(filter, edged, 35, 125, 3); */
-    /* cv::findContours(edged, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, Point(0, 0)); */
-    /* for (size_t i=0; i<contours.size(); i++) */
-    /* { */
-    /*     double area = contourArea ( contours[i]); */
-    /*     if (area > largest_area) */
-    /*     { */
-    /*         largest_area = area; */
-    /*         largest_contour_index = i; */
-    /*         bounding_rect = boundingRect( contours[i]); */
-    /*     } */
-    /* } */
-    /* drawContours(filter, contours, largest_contour_index, Scalar( 0, 255, 0 ), 2); */
-    /* distance = focalLength * 4.0 / bounding_rect.height; */
-    /* std::string title = std::to_string(distance) + "(in)"; */
-    /* putText(frame, title, Point(50, 50), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,255,0)); */
-    cout<<"r"<<lRed<<" "<<uRed<<"b"<<lBlue<<" "<<uBlue<<"g"<<lGreen<<" "<<uGreen<<endl;
-    largest_contour_index = 0;
-    largest_area = 0;
-    //imshow("original", frame); 
+    Mat temp = frame.clone();
+    undistort(temp, frame, cameraMatrix, distCoeffs);
+    resize(frame, smallerFrame, Size(480,320));
+    computeFocalLength(frame);		//Computes and displays focal length for camera
+    //computeDistance(frame);		//Computes and displays distance in inches
+    applyFilter(smallerFrame, filter);
+    imshow("original", frame); 
     imshow("filtered", filter);
     waitKey(1);
   }
@@ -108,77 +63,112 @@ int run_video(char* file)
   cap.release();
   return 1;
 }
-void on_lRed_thresh_trackbar(int, void *)
+void on_lH_thresh_trackbar(int, void *)
 {
-    lRed = min(uRed-1, lRed);
-    setTrackbarPos("Low R","filtered", lRed);
+    lH = min(hH-1, lH);
+    setTrackbarPos("Low H","filtered", lH);
 }
-void on_uRed_thresh_trackbar(int, void *)
+void on_hH_thresh_trackbar(int, void *)
 {
-    uRed = max(uRed, lRed+1);
-    setTrackbarPos("High R", "filtered", uRed);
+    hH = max(hH, lH+1);
+    setTrackbarPos("High H", "filtered", hH);
 }
-void on_lGreen_thresh_trackbar(int, void *)
+void on_lS_thresh_trackbar(int, void *)
 {
-    lGreen = min(uGreen-1, lGreen);
-    setTrackbarPos("Low G","filtered", lGreen);
+    lS = min(hS-1, lS);
+    setTrackbarPos("Low S","filtered", lS);
 }
-void on_uGreen_thresh_trackbar(int, void *)
+void on_hS_thresh_trackbar(int, void *)
 {
-    uGreen = max(uGreen, lGreen+1);
-    setTrackbarPos("High G", "filtered", uGreen);
+    hS = max(hS, lS+1);
+    setTrackbarPos("High S", "filtered", hS);
 }
-void on_lBlue_thresh_trackbar(int, void *)
+void on_lV_thresh_trackbar(int, void *)
 {
-    lBlue= min(uBlue-1, lBlue);
-    setTrackbarPos("Low B","filtered", lBlue);
+    lV= min(hV-1, lV);
+    setTrackbarPos("Low V","filtered", lV);
 }
-void on_uBlue_thresh_trackbar(int, void *)
+void on_hV_thresh_trackbar(int, void *)
 {
-    uBlue = max(uBlue, lBlue+1);
-    setTrackbarPos("High B", "filtered", uBlue);
+    hV = max(hV, lV+1);
+    setTrackbarPos("High V", "filtered", hV);
 }
-/*#include <opencv2/opencv.hpp>
-using namespace cv;
-int main()
+void computeFocalLength(Mat &src)
 {
-  string gst = "nvcamerasrc ! video/x-raw(memory:NVMM), width=(int)1280, height=(int)720, format=(string)I420, framerate=(fraction)24/1 ! nvvidconv flip-method=2 ! video/x-raw, format=(string)BGRx ! videoconvert ! video/x-raw, format(string)BGR ! appsink";
-  cv::Mat img;
-  VideoCapture input(1);
-  namedWindow("img", 1);
-  while(true){
-    Mat frame;
-    input.read(frame);
-    imshow("img", frame);
-    if(waitKey(30)>=0){
-      break;
+    //Known height is the height in inches of the object you are finding. Known distance is distance from camera to object
+    double focalLength = 0, knownHeight = 8.5, knownDistance = 24.0;
+  	int height = findHeightOfLargestContour(src);
+    focalLength = (double) knownDistance * height / knownHeight;
+    std::stringstream s;
+    s << focalLength << "(focalLength in px)";
+    putText(src, s.str(), Point(50, 50), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,255,0));
+    imshow("focalLength", src);
+}
+void computeDistance(Mat &src)
+{
+
+    //Known height is the height in inches of the object you are finding. Known distance is distance from camera to object
+    double focalLength = 0, knownHeight = 8.5, distance = 0;
+  	int height = findHeightOfLargestContour(src);
+  	distance = focalLength * knownHeight / height;
+    std::stringstream s;
+    s << distance << "(distance in IN)";
+    putText(src, s.str(), Point(50, 50), FONT_HERSHEY_SIMPLEX, 1, Scalar(0,255,0));
+    imshow("distance", src);
+    
+}
+int findHeightOfLargestContour(Mat &src)
+{
+		Rect bounding_rect;
+		int largest_area = 0, largest_contour_index=0;
+		vector<vector<Point> > contours;
+  	vector<Vec4i> hierarchy;
+		Mat edged;
+		cv::Canny(src, edged, 35, 125, 3);
+    cv::findContours(edged, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+    for (size_t i=0; i<contours.size(); i++)
+    {
+        double area = contourArea ( contours[i]);
+        if (area > largest_area)
+        {
+            largest_area = area;
+            largest_contour_index = i;
+            bounding_rect = boundingRect( contours[i]);
+        }
     }
-  }
-}*/
+    drawContours(src, contours, largest_contour_index, Scalar( 0, 255, 0 ), 2);
+    return bounding_rect.height;
+}
+void addTrackBars(string window)
+{
+	createTrackbar("Low H", window, &lH, 255, on_lH_thresh_trackbar);
+  createTrackbar("High H", window, &hH, 255, on_hH_thresh_trackbar);
+  createTrackbar("Low S", window, &lS, 255, on_lS_thresh_trackbar);
+  createTrackbar("High S", window, &hS, 255, on_hS_thresh_trackbar);
+  createTrackbar("Low V", window, &lV, 255, on_lV_thresh_trackbar);
+  createTrackbar("High V", window, &hV, 255, on_hV_thresh_trackbar);
+
+}
 void readCalibration(string filename, Mat& image, Mat& coeffs){
     cout << endl << "Reading: " << filename << endl;
     FileStorage fs;
     fs.open(filename, FileStorage::READ);
 
-    int itNr;
-    //fs["iterationNr"] >> itNr;
-    itNr = (int) fs["iterationNr"];
-    cout << itNr;
     if (!fs.isOpened())
     {
         cerr << "Failed to open " << filename << endl;
-        help(av);
-        return 1;
+        return;
     }
 
-    FileNodeIterator it = n.begin(), it_end = n.end(); // Go through the node
-    for (; it != it_end; ++it)
-        cout << (string)*it << endl;
-
-    fs["image_matrix"] >> image;                                      // Read cv::Mat
+    fs["camera_matrix"] >> image;                                      // Read cv::Mat
     fs["distortion_coefficients"] >> coeffs;
-    cout << endl
-        << "image_matrix = " << image << endl;
-    cout << "distortion_coefficients = " << distortion_coefficients << endl << endl;
+    cout << endl << "camera_matrix = " << image << endl;
+    cout << "distortion_coeffs = " << coeffs << endl << endl;
+}
+void applyFilter(Mat &src, Mat &dest)
+{
+		Mat hsv;
+ 		cvtColor(src, hsv, COLOR_BGR2HSV);
+    inRange(hsv, Scalar(lV, lS, lH), Scalar(hV, hS, hH), dest);
 }
 
