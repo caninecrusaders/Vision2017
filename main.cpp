@@ -1,10 +1,13 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/gpu/gpu.hpp"
-
+#include <ntcore.h>
 #include <iostream>
 #include <string>
 #include <stdlib.h>
+#include <chrono>
+#include <thread>
+#include <networktables/NetworkTable.h>
 
 
 using namespace std;
@@ -24,8 +27,15 @@ void applyFilter(Mat &src, Mat &dest);
 int findHeightOfLargestContour(Mat &src);
 Mat cameraMatrix, distCoeffs;
 int lV = 80, lS = 220, lH = 130, hV = 130, hS = 255, hH = 255;
+void outputToRoboRio(double output);
 int main(int v,char* argv[]){
   
+   NetworkTable::SetClientMode();
+   NetworkTable::SetIPAddress("127.0.0.1");
+   NetworkTable::Initialize();
+   shared_ptr <NetworkTable> visionTable = NetworkTable::GetTable("vision");
+   visionTable->PutString("data", "placeholder");
+  outputToRoboRio(10.0);
   cout << argv[1] << "\n";
   namedWindow("original", WINDOW_NORMAL);
   namedWindow("filtered", WINDOW_NORMAL);
@@ -171,4 +181,18 @@ void applyFilter(Mat &src, Mat &dest)
  		cvtColor(src, hsv, COLOR_BGR2HSV);
     inRange(hsv, Scalar(lV, lS, lH), Scalar(hV, hS, hH), dest);
 }
+void outputToRoboRio(double output)
+{
+ 
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+  //auto foo = nt::GetEntryValue("/foo");
+  //if (foo && foo->IsDouble()) printf("Got foo: %g\n", foo->GetDouble());
+  nt::SetEntryValue("/data", nt::Value::MakeDouble(output));
+  /*nt::SetEntryFlags("/bar", NT_PERSISTENT);
+  nt::SetEntryValue("/bar2", nt::Value::MakeBoolean(true));
+  nt::SetEntryValue("/bar2", nt::Value::MakeBoolean(false));
+  nt::SetEntryValue("/bar2", nt::Value::MakeBoolean(true));*/
+  std::this_thread::sleep_for(std::chrono::seconds(10));
+}
+
 
